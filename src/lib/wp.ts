@@ -89,4 +89,6 @@ export async function ambilSlugUntukSitemap(jumlah = 100) {
 }
 
 export const situsUrl = () =>
-  (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
+  (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
+    .trim()               // environment variable sering terbawa spasi saat disalin
+    .replace(/\/$/, '');

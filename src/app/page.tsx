@@ -22,6 +22,11 @@ export default async function Beranda() {
         disegarkan lewat <b>ISR + webhook revalidasi</b> tanpa deploy ulang.
         <br />
         HTML ini dibangun pada <b>{dibangunPada}</b> (UTC).
+        <br /><br />
+        Tidak ingin memeriksa manual? Halaman{' '}
+        <Link href="/bukti"><b>/bukti</b></Link> memeriksa situs ini sendiri
+        secara langsung — rendering, canonical, metadata, JSON-LD, sitemap,
+        robots, ukuran JavaScript, dan keamanan endpoint revalidasi.
       </div>
 
       {artikel.map((a) => (
