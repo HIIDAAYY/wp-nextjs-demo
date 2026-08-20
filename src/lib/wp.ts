@@ -40,12 +40,71 @@ const bersihkan = (html: string) =>
   html.replace(/<[^>]*>/g, '').replace(/&hellip;/g, '…').replace(/&#8217;/g, '’')
       .replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
 
+/**
+ * Perbaikan aksesibilitas: memastikan semua tautan <a> dan tombol <button>
+ * memiliki aria-label jika tidak mempunyai teks/alt. (Mencegah masalah Lighthouse 5 -> 0)
+ */
+function perbaikiAriaLabel(html: string): string {
+  if (!html) return html;
+
+  let hasil = html.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (match, attrs, inner) => {
+    if (/aria-label\s*=|aria-labelledby\s*=|title\s*=/i.test(attrs)) {
+      return match;
+    }
+    const textContent = inner.replace(/<[^>]*>/g, '').trim();
+    if (textContent.length > 0) {
+      return match;
+    }
+    const imgAltMatch = inner.match(/<img\b[^>]*alt=["']([^"']+)["']/i);
+    if (imgAltMatch && imgAltMatch[1].trim().length > 0) {
+      return match;
+    }
+
+    let label = 'Tautan';
+    const hrefMatch = attrs.match(/href=["']([^"']+)["']/i);
+    if (hrefMatch) {
+      const href = hrefMatch[1];
+      if (href.includes('chromewebstore') || href.includes('chrome')) label = 'Chrome Web Store';
+      else if (href.includes('apps.apple.com') || href.includes('apple')) label = 'App Store';
+      else if (href.includes('github.com')) label = 'GitHub';
+      else if (href.includes('youtube.com')) label = 'YouTube';
+      else {
+        try {
+          const parsed = new URL(href);
+          label = `Tautan ke ${parsed.hostname}`;
+        } catch {
+          label = 'Tautan';
+        }
+      }
+    } else if (/prev|previous/i.test(attrs)) {
+      label = 'Sebelumnya';
+    } else if (/next/i.test(attrs)) {
+      label = 'Berikutnya';
+    }
+
+    return `<a aria-label="${label}"${attrs}>${inner}</a>`;
+  });
+
+  hasil = hasil.replace(/<button\b([^>]*)>([\s\S]*?)<\/button>/gi, (match, attrs, inner) => {
+    if (/aria-label\s*=|aria-labelledby\s*=|title\s*=/i.test(attrs)) {
+      return match;
+    }
+    const textContent = inner.replace(/<[^>]*>/g, '').trim();
+    if (textContent.length > 0) {
+      return match;
+    }
+    return `<button aria-label="Tombol"${attrs}>${inner}</button>`;
+  });
+
+  return hasil;
+}
+
 function petakan(p: WpPost): Artikel {
   return {
     slug: p.slug,
     judul: bersihkan(p.title.rendered),
     ringkasan: bersihkan(p.excerpt.rendered).slice(0, 300),
-    isiHtml: p.content.rendered,
+    isiHtml: perbaikiAriaLabel(p.content.rendered),
     tanggal: p.date_gmt,
     diperbaruiPada: p.modified_gmt,
     penulis: p._embedded?.author?.[0]?.name ?? 'Redaksi',
