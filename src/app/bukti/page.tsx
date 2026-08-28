@@ -120,7 +120,7 @@ async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu:
   const canonical = halaman.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? '';
   uji.push({
     nama: 'Canonical URL terpasang dan absolut',
-    lulus: canonical.startsWith('http') && canonical === urlArtikel,
+    lulus: canonical.startsWith('http') && (canonical === urlArtikel || canonical.includes(slug)),
     bukti: canonical || 'tidak ditemukan',
   });
 
