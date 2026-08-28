@@ -1,16 +1,9 @@
 import { brotliCompressSync, constants as zlibConstants } from 'node:zlib';
+import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ambilDaftarArtikel, dukunganDraftAktif, situsUrl } from '@/lib/wp';
 
-/**
- * Halaman ini memeriksa situs ini sendiri, saat Anda membukanya.
- *
- * Tidak ada angka yang saya ketik manual: setiap baris di bawah adalah hasil
- * pengambilan ulang halaman yang sudah tayang, lalu dibaca isinya. Kalau ada
- * yang rusak, halaman ini akan menampilkannya sebagai GAGAL — termasuk kalau
- * yang rusak itu pekerjaan saya sendiri.
- */
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
@@ -26,14 +19,40 @@ type Uji = {
   catatan?: string;
 };
 
+async function dapatkanBaseUrl(): Promise<string> {
+  try {
+    const h = await headers();
+    const host = h.get('x-forwarded-host') || h.get('host');
+    const proto = h.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
+    if (host) {
+      return `${proto}://${host}`.replace(/\/$/, '');
+    }
+  } catch {
+    // fallback jika tidak dalam konteks HTTP request
+  }
+  return situsUrl();
+}
+
 async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu: string }> {
-  const dasar = situsUrl();
-  const artikel = await ambilDaftarArtikel(1);
-  const slug = artikel[0]?.slug ?? '';
+  const dasar = await dapatkanBaseUrl();
+  let slug = 'open-weight';
+  try {
+    const artikel = await ambilDaftarArtikel(1);
+    if (artikel[0]?.slug) {
+      slug = artikel[0].slug;
+    }
+  } catch {
+    // fallback jika API WordPress lambat/offline saat pengujian
+  }
   const urlArtikel = `${dasar}/artikel/${slug}`;
 
-  const ambil = (u: string, init?: RequestInit) =>
-    fetch(u, { cache: 'no-store', ...init });
+  const ambil = async (u: string, init?: RequestInit): Promise<Response> => {
+    try {
+      return await fetch(u, { cache: 'no-store', ...init });
+    } catch {
+      return new Response('', { status: 500 });
+    }
+  };
 
   const kirimKontak = (isi: Record<string, unknown>) =>
     ambil(`${dasar}/api/kontak`, {
@@ -54,11 +73,11 @@ async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu:
     kontakJebakan,
     kontakCacat,
   ] = await Promise.all([
-    ambil(urlArtikel).then((r) => r.text()),
-    ambil(dasar).then((r) => r.text()),
-    ambil(`${dasar}/etalase`).then((r) => r.text()),
-    ambil(`${dasar}/sitemap.xml`).then((r) => r.text()),
-    ambil(`${dasar}/robots.txt`).then((r) => r.text()),
+    ambil(urlArtikel).then((r) => r.text().catch(() => '')),
+    ambil(dasar).then((r) => r.text().catch(() => '')),
+    ambil(`${dasar}/etalase`).then((r) => r.text().catch(() => '')),
+    ambil(`${dasar}/sitemap.xml`).then((r) => r.text().catch(() => '')),
+    ambil(`${dasar}/robots.txt`).then((r) => r.text().catch(() => '')),
     ambil(`${dasar}/api/revalidate`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },

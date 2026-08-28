@@ -419,7 +419,13 @@ const FAQ_CONTOH: Faq[] = [
   },
 ];
 
-export const situsUrl = () =>
-  (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000')
-    .trim()               // environment variable sering terbawa spasi saat disalin
-    .replace(/\/$/, '');
+export const situsUrl = () => {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_URL) {
+    const host = process.env.VERCEL_URL.trim().replace(/\/$/, '');
+    return host.startsWith('http') ? host : `https://${host}`;
+  }
+  return 'http://localhost:3000';
+};
