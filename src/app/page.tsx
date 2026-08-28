@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import Link from 'next/link';
 import { ambilDaftarArtikel, situsUrl } from '@/lib/wp';
 
@@ -23,15 +24,31 @@ export default async function Beranda() {
         <br />
         HTML ini dibangun pada <b>{dibangunPada}</b> (UTC).
         <br /><br />
-        Tidak ingin memeriksa manual? Halaman{' '}
-        <Link href="/bukti"><b>/bukti</b></Link> memeriksa situs ini sendiri
-        secara langsung — rendering, canonical, metadata, JSON-LD, sitemap,
-        robots, ukuran JavaScript, dan keamanan endpoint revalidasi.
+        Halaman <Link href="/etalase"><b>/etalase</b></Link> menunjukkan sisi CMS
+        yang lebih dalam: custom post type (produk, video, FAQ), structured data
+        Product/VideoObject/FAQPage, dan form dengan validasi di sisi server.
+        <br />
+        Halaman <Link href="/bukti"><b>/bukti</b></Link> memeriksa situs ini
+        sendiri secara langsung — rendering, canonical, metadata, JSON-LD,
+        sitemap, robots, ukuran JavaScript, dan keamanan endpoint revalidasi.
       </div>
 
-      {artikel.map((a) => (
+      {artikel.map((a, i) => (
         <article className="kartu" key={a.slug}>
           <Link href={`/artikel/${a.slug}`}>
+            {/* Gambar CMS lewat next/image: dikecilkan sesuai lebar layar dan
+                dikirim sebagai AVIF/WebP, tanpa menyentuh media library. */}
+            {a.gambar && (
+              <Image
+                className="gambar-kecil"
+                src={a.gambar}
+                alt={a.gambarAlt}
+                width={800}
+                height={420}
+                sizes="(max-width: 760px) 100vw, 720px"
+                priority={i === 0}
+              />
+            )}
             <h2>{a.judul}</h2>
             <p className="meta">
               {new Date(a.tanggal).toLocaleDateString('id-ID', {
@@ -47,7 +64,8 @@ export default async function Beranda() {
         <p>
           Sumber konten: WordPress REST API. Sitemap otomatis:{' '}
           <a href="/sitemap.xml">/sitemap.xml</a> · robots:{' '}
-          <a href="/robots.txt">/robots.txt</a>
+          <a href="/robots.txt">/robots.txt</a> · versi Inggris:{' '}
+          <Link href="/en">/en</Link>
         </p>
         <p>Dibuat oleh Muhammad Aditia · {situsUrl().replace('https://', '')}</p>
       </footer>
