@@ -20,11 +20,17 @@ type Uji = {
 };
 
 async function dapatkanBaseUrl(): Promise<string> {
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, '');
+  }
+  if (process.env.VERCEL_ENV === 'production') {
+    return 'https://wp-nextjs-demo-lime.vercel.app';
+  }
   try {
     const h = await headers();
     const host = h.get('x-forwarded-host') || h.get('host');
     const proto = h.get('x-forwarded-proto') || (host?.includes('localhost') ? 'http' : 'https');
-    if (host) {
+    if (host && !host.includes('-adits-projects-')) {
       return `${proto}://${host}`.replace(/\/$/, '');
     }
   } catch {
@@ -118,9 +124,10 @@ async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu:
 
   // 2 — canonical
   const canonical = halaman.match(/<link rel="canonical" href="([^"]+)"/)?.[1] ?? '';
+  const canonicalBersih = !canonical.includes('-adits-projects-') && !canonical.includes('-git-');
   uji.push({
-    nama: 'Canonical URL terpasang dan absolut',
-    lulus: canonical.startsWith('http') && (canonical === urlArtikel || canonical.includes(slug)),
+    nama: 'Canonical URL terpasang, absolut, dan menggunakan domain produksi bersih',
+    lulus: canonical.startsWith('http') && canonical === urlArtikel && canonicalBersih,
     bukti: canonical || 'tidak ditemukan',
   });
 
