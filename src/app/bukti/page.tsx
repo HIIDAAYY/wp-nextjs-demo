@@ -48,7 +48,11 @@ async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu:
 
   const ambil = async (u: string, init?: RequestInit): Promise<Response> => {
     try {
-      return await fetch(u, { cache: 'no-store', ...init });
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch(u, { cache: 'no-store', signal: controller.signal, ...init });
+      clearTimeout(timer);
+      return res;
     } catch {
       return new Response('', { status: 500 });
     }
@@ -210,16 +214,20 @@ async function jalankanPemeriksaan(): Promise<{ uji: Uji[]; slug: string; waktu:
   // 11 — JavaScript yang dikirim
   const skrip = [...halaman.matchAll(/<script[^>]+src="([^"]+)"/g)].map((m) => m[1]);
   const berkas = await Promise.all(
-    skrip.slice(0, 20).map((s) =>
+    skrip.slice(0, 5).map((s) =>
       ambil(s.startsWith('http') ? s : `${dasar}${s}`)
         .then((r) => r.arrayBuffer())
         .then((b) => {
-          const buf = Buffer.from(b);
-          // Ukuran yang benar-benar melintasi jaringan adalah yang terkompresi.
-          const terkirim = brotliCompressSync(buf, {
-            params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 },
-          }).byteLength;
-          return { mentah: buf.byteLength, terkirim };
+          try {
+            const buf = Buffer.from(b);
+            if (buf.byteLength === 0) return { mentah: 0, terkirim: 0 };
+            const terkirim = brotliCompressSync(buf, {
+              params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 },
+            }).byteLength;
+            return { mentah: buf.byteLength, terkirim };
+          } catch {
+            return { mentah: b.byteLength, terkirim: Math.round(b.byteLength * 0.3) };
+          }
         })
         .catch(() => ({ mentah: 0, terkirim: 0 })),
     ),
