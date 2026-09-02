@@ -427,7 +427,7 @@ export const situsUrl = () => {
     return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`.trim().replace(/\/$/, '');
   }
   if (process.env.VERCEL_ENV === 'production') {
-    return 'https://wp-nextjs-demo-lime.vercel.app';
+    return 'https://headless-wp-nextjs-demo.vercel.app';
   }
   if (process.env.VERCEL_URL) {
     const host = process.env.VERCEL_URL.trim().replace(/\/$/, '');

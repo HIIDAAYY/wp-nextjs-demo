@@ -24,7 +24,7 @@ async function dapatkanBaseUrl(): Promise<string> {
     return process.env.NEXT_PUBLIC_SITE_URL.trim().replace(/\/$/, '');
   }
   if (process.env.VERCEL_ENV === 'production') {
-    return 'https://wp-nextjs-demo-lime.vercel.app';
+    return 'https://headless-wp-nextjs-demo.vercel.app';
   }
   try {
     const h = await headers();
